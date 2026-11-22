@@ -1,0 +1,55 @@
+name: Daily commits
+
+on:
+  schedule:
+    - cron: "17 9 * * *"   # täglich 09:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ersten PR prüfen und Git-Identität setzen
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          FIRST_PR=$(gh api -X GET search/issues \
+            -f q="author:$OWNER type:pr" -f sort=created -f order=asc -f per_page=1 \
+            --jq '.items[0].created_at // empty' || true)
+          if [ -z "$FIRST_PR" ]; then
+            echo "Noch kein Pull Request vorhanden - es wird nichts gemacht."
+            echo "has_pr=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Erster PR: $FIRST_PR"
+          echo "has_pr=true" >> "$GITHUB_OUTPUT"
+          ID=$(gh api "users/$OWNER" --jq .id)
+          git config user.name  "$OWNER"
+          git config user.email "${ID}+${OWNER}@users.noreply.github.com"
+
+      - name: Commits erstellen
+        if: steps.check.outputs.has_pr == 'true'
+        run: |
+          MIN=5; MAX=10
+          COUNT=$(( MIN + RANDOM % (MAX - MIN + 1) ))
+          WORDS=(update tweak refactor cleanup notes log tidy adjust polish sync)
+          mkdir -p logs
+          FILE="logs/$(date -u +%Y-%m).md"
+          for i in $(seq 1 "$COUNT"); do
+            w=${WORDS[$RANDOM % ${#WORDS[@]}]}
+            echo "- $(date -u '+%F %T') $w #$i $RANDOM$RANDOM" >> "$FILE"
+            git add "$FILE"
+            git commit -q -m "$w: entry $i ($(date -u +%F))"
+          done
+          echo "$COUNT Commits erstellt."
+
+      - name: Pushen
+        if: steps.check.outputs.has_pr == 'true'
+        run: git push
