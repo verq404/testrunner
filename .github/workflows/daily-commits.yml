@@ -37,7 +37,7 @@ jobs:
       - name: Commits erstellen
         if: steps.check.outputs.has_pr == 'true'
         run: |
-          MIN=5; MAX=10
+          MIN=2; MAX=35
           COUNT=$(( MIN + RANDOM % (MAX - MIN + 1) ))
           WORDS=(update tweak refactor cleanup notes log tidy adjust polish sync)
           mkdir -p logs
