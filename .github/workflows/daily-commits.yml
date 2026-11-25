@@ -25,7 +25,7 @@ jobs:
 
       - name: Commits erstellen
         run: |
-          MIN=2; MAX=35
+          MIN=1; MAX=38
           COUNT=$(( MIN + RANDOM % (MAX - MIN + 1) ))
           WORDS=(update tweak refactor cleanup notes log tidy adjust polish sync)
           mkdir -p logs
